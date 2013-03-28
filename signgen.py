@@ -2,6 +2,7 @@
 import os
 import subprocess
 import tempfile
+from xml.sax.saxutils import escape
 
 WITH_IMAGE    = 'with-image'
 WITHOUT_IMAGE = 'without-image'
@@ -68,7 +69,10 @@ def SVG_to_PDF(svg_fname, pdf_fname):
                     stderr=subprocess.PIPE)
 
 
-def generate_PDF(size, msg, output_fname, image_file=None):
+def generate_PDF(size, msg, output_fname, raw_message=False, image_file=None):
+    if not raw_message:
+        msg = escape(msg)
+        msg = msg.replace("\n", "<flowRegionBreak />")
     tmp_fd, tmp_fname = tempfile.mkstemp()
     generate_SVG(size, msg, tmp_fname, image_file=image_file)
     SVG_to_PDF(tmp_fname, output_fname)

@@ -16,13 +16,16 @@ def get_args():
     parser.add_argument('-s', '--size', default='a4',
                         help="The size of the output (only a4 right now)")
 
+    parser.add_argument('-r', '--raw', action="store_true",
+                        help="Don't xml escape the message (newlines.")
+
     parser.add_argument('-o', '--output', required=True,
                         help="The output PDF filename")
 
     args = parser.parse_args()
-    return args.size, args.msg, args.image, args.output
+    return args.size, args.msg, args.image, args.output, args.raw
 
 
 if __name__ == '__main__':
-    size, msg, image, output = get_args()
-    signgen.generate_PDF(size, msg, output, image_file=image)
+    size, msg, image, output, raw = get_args()
+    signgen.generate_PDF(size, msg, output, raw, image_file=image)
