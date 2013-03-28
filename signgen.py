@@ -1,4 +1,7 @@
-import os, subprocess, tempfile
+
+import os
+import subprocess
+import tempfile
 
 WITH_IMAGE    = 'with-image'
 WITHOUT_IMAGE = 'without-image'
