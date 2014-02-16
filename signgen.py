@@ -2,6 +2,7 @@
 import os
 import subprocess
 import tempfile
+import errno
 from xml.sax.saxutils import escape
 
 WITH_IMAGE    = 'with-image'
@@ -65,9 +66,14 @@ def generate_SVG(size, msg, output_fname, image_file=None):
 
 
 def SVG_to_PDF(svg_fname, pdf_fname):
-    subprocess.call(['inkscape', '-A', pdf_fname, svg_fname],
-                    stderr=subprocess.PIPE)
-
+    try:
+        subprocess.call(['inkscape', '-A', pdf_fname, svg_fname],
+                        stderr=subprocess.PIPE)
+    except OSError as err:
+        if err.errno == errno.ENOENT:
+            exit("Unable to generate sign, Inkscape may not be installed")
+        else:
+            raise
 
 def generate_PDF(size, msg, output_fname, raw_message=False, image_file=None):
     if not raw_message:

@@ -3,6 +3,7 @@ SR SignGen
 
 Generate an SR sign PDF, with or without an image.
 The optional image, if used, should be square to prevent distortion.
+This tool requires inkscape to be installed.
 
 
 Usage
