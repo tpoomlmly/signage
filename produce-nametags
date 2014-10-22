@@ -1,0 +1,105 @@
+#!/usr/bin/env python
+import argparse, subprocess, tempfile, os, os.path, shutil, zipfile, sys
+
+parser = argparse.ArgumentParser(description = "Generate formatted documents.")
+
+parser.add_argument("-o", dest = "output",
+                    metavar = "FILE", type=argparse.FileType('w'),
+                    help = "Output file")
+parser.add_argument("-l", dest = "lanyards", action="store_true",
+                    help = "Emit lanyard badge inserts rather than name badges")
+
+args = parser.parse_args()
+
+# This LaTeX code is based on some code by William Webber <william@williamwebber.com>
+
+prefix = r"""
+\documentclass[12pt]{article}
+\usepackage{scalefnt}
+\usepackage{graphicx}
+\usepackage{csvtools}
+\usepackage{filecontents}
+
+\begin{filecontents*}{names.csv}
+Name
+"""
+
+body = r"""
+\end{filecontents*}
+
+%% The showframe option to the geometry package is useful for 
+%% debugging problems with margins.
+%%
+%%\usepackage[a4paper,showframe,top=38mm,right=18.5mm,left=18.5mm,bottom=37.5mm]{geometry}
+\usepackage[a4paper,top=38mm,right=18.5mm,left=18.5mm,bottom=37.5mm]{geometry}
+\usepackage{times}
+\setlength{\unitlength}{1mm}
+\columnsep  0mm
+
+\newcommand{\nametag}[1]{
+\noindent
+%% Uncommenting frame (and the close brace after \end{picture}) will
+%% draw a frame around each card, which is useful for positioning
+%% (and if you're printing on unperforated paper and then guillotining
+%% the result, God help you.)
+%%
+\frame{
+
+\begin{picture}"""
+
+if args.lanyards:
+    layout = r"""
+    (103,72)
+    \put(0, 66){\makebox( 103, 0)[tc]{\includegraphics[keepaspectratio=true,height=40mm]{sr-logo.pdf}}}
+    {\Huge\scalefont{1.1}\put(0,18){\makebox( 103, 0)[tc]{\bf #1}}}
+    """
+else:
+    layout = r"""
+    (75,35)
+    \put(0, 33){\makebox( 75, 0)[tc]{\includegraphics[keepaspectratio=true,height=20mm]{sr-logo.pdf}}}
+    {\Huge\scalefont{1.0}\put(0,9){\makebox( 75, 0)[tc]{\bf #1}}}
+    """
+
+suffix = r"""
+\end{picture}} %% NB following blank line is necessary, to allow page
+               %% to be broken
+
+}
+\begin{document}
+\pagestyle{empty}
+\twocolumn
+\setlength{\unitlength}{1mm}
+
+%% include list of names, in the form \nametag{Title}{GivenName}{FamilyName}{Tag}
+% \include{names}
+\applyCSVfile{names.csv}{
+    \nametag{\insertName}
+}
+
+\end{document}
+"""
+
+temp_dir = tempfile.mkdtemp('srdoc')
+
+main_file = os.path.join(temp_dir, 'main.tex')
+with open(main_file, 'w') as f:
+    f.write(prefix)
+    for line in sys.stdin:
+        f.write(line.strip() + '\n')
+    f.write(body)
+    f.write(layout)
+    f.write(suffix)
+
+zip_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'latex-assets.zip')
+with zipfile.ZipFile(zip_path, 'r') as zf:
+    zf.extract('sr-logo.pdf', temp_dir)
+
+with open(os.devnull, 'w') as fnull:
+    subprocess.check_call(['pdflatex', 'main.tex', '-interaction=batchmode'],
+                          cwd=temp_dir, stderr=fnull, stdout=fnull)
+
+with open(os.path.join(temp_dir, 'main.pdf'), 'r') as f:
+    args.output.write(f.read())
+
+shutil.rmtree(temp_dir)
+
